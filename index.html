@@ -12,7 +12,7 @@
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
         #map { width: 100%; height: 100%; position: absolute; top: 0; bottom: 0; z-index: 1; }
 
-        /* 범례(설명창) 스타일 */
+        /* 범례 스타일 - 요청사항 반영 */
         .legend {
             position: absolute; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 10px; border-radius: 8px;
@@ -34,7 +34,7 @@
         .handle { width: 40px; height: 5px; background: #ccc; border-radius: 3px; margin: 0 auto 10px; }
         .sheet-content { flex: 1; overflow: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
         
-        /* 테이블/팝업 스타일 */
+        /* 테이블 및 팝업 스타일 */
         table { width: 100%; border-collapse: collapse; text-align: center; font-size: 11px; min-width: 600px; }
         th, td { padding: 8px; border: 1px solid #dee2e6; }
         .clickable { color: #007bff; text-decoration: underline; font-weight: bold; cursor: pointer; }
@@ -79,8 +79,8 @@
     var locations = [
         {"name": "인천기초학력지원센터(경인교대)", "addr": "인천 계양구 계산로 62", "cat": "both", "lat": 37.538426, "lon": 126.716534, "dist": "계양구", "tel": "032-540-1403", "rem": "교육청 직영 센터"},
         {"name": "검단아동발달센터", "addr": "인천 서구 이음대로 378", "cat": "both", "lat": 37.599734, "lon": 126.700389, "dist": "검단구", "tel": "070-8282-8285", "rem": "신규 협약"},
-        {"name": "맘친구아동심리발달센터", "addr": "인천 중구 하늘별빛로 65", "cat": "both", "lat": 37.489611, "lon": 126.562428, "dist": "영종구", "tel": "010-2807-9403", "rem": "찾아가는 교육 가능"},
-        {"name": "해수아동발달연구소", "addr": "부천시 길주로 91", "cat": "both", "lat": 37.506507, "lon": 126.752553, "dist": "기타", "tel": "032-715-5808", "rem": "부천 상동 소재"},
+        {"name": "맘친구아동심리발달센터", "addr": "인천 중구 하늘별빛로 65", "cat": "both", "lat": 37.489611, "lon": 126.562428, "dist": "영종구", "tel": "010-2807-9403", "rem": "학교 찾아가는 교육 가능"},
+        {"name": "해수아동발달연구소", "addr": "경기도 부천시 길주로 91", "cat": "both", "lat": 37.506507, "lon": 126.752553, "dist": "기타", "tel": "032-715-5808", "rem": "부천 상동 소재"},
         {"name": "아이꿈트리언어심리상담", "addr": "인천 서구 이음5로 80", "cat": "both", "lat": 37.599817, "lon": 126.715661, "dist": "검단구", "tel": "032-564-7323", "rem": "신규 협약"},
         {"name": "이루언어심리발달센터(검단)", "addr": "인천 서구 이음5로 30", "cat": "both", "lat": 37.594314, "lon": 126.711526, "dist": "검단구", "tel": "032-710-7254", "rem": "신규"},
         {"name": "다올언어심리상담센터(본점)", "addr": "인천 부평구 부개로 61-6", "cat": "both", "lat": 37.503400, "lon": 126.739612, "dist": "부평구", "tel": "032-502-3858", "rem": "신규"},
@@ -94,7 +94,7 @@
         {"name": "톡톡언어학습심리센터", "addr": "인천 연수구 독배로 68", "cat": "both", "lat": 37.426804, "lon": 126.645245, "dist": "연수구", "tel": "032-833-5579", "rem": ""},
         {"name": "햇살나무발달센터", "addr": "인천 서구 원당대로 676", "cat": "both", "lat": 37.593484, "lon": 126.676475, "dist": "검단구", "tel": "010-7579-8776", "rem": "신규"},
         {"name": "구래아동발달센터", "addr": "김포시 김포한강9로76번길 37", "cat": "both", "lat": 37.644352, "lon": 126.627384, "dist": "기타", "tel": "070-4012-7535", "rem": ""},
-        {"name": "경계선지능인지원센터", "addr": "인천 서구 백범로 622", "cat": "border", "lat": 37.478327, "lon": 126.686574, "dist": "서구", "tel": "010-8282-6911", "rem": "찾아가는 교육 전용"},
+        {"name": "경계선지능인지원센터", "addr": "인천 서구 백범로 622", "cat": "border", "lat": 37.478327, "lon": 126.686574, "dist": "서구", "tel": "010-8282-6911", "rem": "초등 대상 학교로 찾아가는 교육 전용"},
         {"name": "대교에듀캠프 드림멘토", "addr": "서울 강서구 공항대로 186", "cat": "border", "lat": 37.559258, "lon": 126.827994, "dist": "기타", "tel": "010-4042-9039", "rem": "찾아가는 교육 가능"},
         {"name": "해바람아동발달센터", "addr": "인천 동구 송현로 1", "cat": "border", "lat": 37.477203, "lon": 126.633378, "dist": "미추홀구", "tel": "032-777-6616", "rem": "찾아가는 교육 가능"},
         {"name": "검단라파언어심리센터", "addr": "인천 서구 검단로 459", "cat": "border", "lat": 37.601762, "lon": 126.654738, "dist": "검단구", "tel": "032-565-7757", "rem": ""},
@@ -120,10 +120,9 @@
         locations.forEach(function(loc) {
             var color = loc.cat === 'border' ? '#007bff' : (loc.cat === 'dyslexia' ? '#fd7e14' : '#dc3545');
             var marker = L.circleMarker([loc.lat, loc.lon], {
-                radius: 10, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9
+                radius: 11, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9
             }).addTo(markerGroup);
 
-            // 팝업 내용 정의 (기관의 모든 상세 정보 포함)
             var naverMapUrl = "https://map.naver.com/v5/search/" + encodeURIComponent(loc.addr);
             var popupContent = `
                 <div style="width:250px; margin:-10px;">
@@ -152,10 +151,15 @@
 
     function updateStats() {
         var districts = ["미추홀구", "영종구", "서구", "검단구", "부평구", "계양구", "남동구", "연수구", "강화군", "기타"];
-        var categories = [{id:"border", name:"경계선지능"}, {id:"dyslexia", name:"난독증"}, {id:"both", name:"복합지원"}];
+        // 구분 명칭도 요청대로 '경계선지능 및 난독증'으로 변경
+        var categories = [
+            {id:"border", name:"경계선지능"}, 
+            {id:"dyslexia", name:"난독증"}, 
+            {id:"both", name:"경계선지능 및 난독증"}
+        ];
         var html = "";
         categories.forEach(cat => {
-            html += `<tr><td style="background:#f9f9f9; font-weight:bold;">${cat.name}</td>`;
+            html += `<tr><td style="background:#f9f9f9; font-weight:bold; text-align:left;">${cat.name}</td>`;
             districts.forEach(dist => {
                 var count = locations.filter(l => l.cat === cat.id && l.dist === dist).length;
                 html += count > 0 ? `<td class="clickable" onclick="zoomToDistrict('${cat.id}', '${dist}')">${count}</td>` : `<td style="color:#ccc">0</td>`;
