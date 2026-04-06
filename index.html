@@ -4,57 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>2026 인천 학습종합클리닉 지도</title>
-    
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
-    
     <style>
-        /* 모바일 전체 화면 설정 */
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; background: #f8f9fa; }
-        #map { width: 100%; height: 65%; position: absolute; top: 0; z-index: 1; }
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
+        #map { width: 100%; height: 100%; position: absolute; top: 0; bottom: 0; z-index: 1; }
 
-        /* 하단 안내창 모바일 최적화 */
-        .info-container {
-            position: absolute; bottom: 0; width: 100%; height: 35%;
-            background: white; z-index: 2; border-radius: 20px 20px 0 0;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.1); padding: 15px;
+        /* 접이식 바텀 시트 디자인 */
+        .bottom-sheet {
+            position: absolute; bottom: 0; width: 100%; z-index: 1000;
+            background: white; border-radius: 25px 25px 0 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+            transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 120px; /* 초기 높이: 헤더만 노출 */
             display: flex; flex-direction: column;
         }
+        .bottom-sheet.expanded { height: 75%; /* 펼쳤을 때 높이 */ }
 
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header-row h6 { margin: 0; font-weight: bold; color: #333; font-size: 14px; }
+        /* 패널 상단 손잡이 및 헤더 */
+        .sheet-header {
+            padding: 10px; cursor: pointer; text-align: center;
+            border-bottom: 1px solid #eee; flex-shrink: 0;
+        }
+        .handle {
+            width: 40px; height: 5px; background: #ccc; border-radius: 3px;
+            margin: 0 auto 10px;
+        }
+        .header-title { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+        .header-title h6 { margin: 0; font-weight: bold; font-size: 14px; }
 
-        /* 테이블 스크롤 최적화 */
-        .table-wrapper { flex: 1; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 11px; min-width: 500px; }
-        th { background: #eee; padding: 6px; position: sticky; top: 0; z-index: 3; border: 1px solid #ddd; }
-        td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
+        /* 테이블 영역 */
+        .sheet-content { flex: 1; overflow-y: auto; overflow-x: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 11px; min-width: 600px; }
+        th { background: #f8f9fa; padding: 8px; border: 1px solid #dee2e6; position: sticky; top: 0; }
+        td { padding: 8px; border: 1px solid #dee2e6; }
         
         .clickable { color: #007bff; text-decoration: underline; font-weight: bold; cursor: pointer; }
-        .disabled { color: #ccc; }
-
-        /* 팝업 스타일 */
-        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 0; width: 250px !important; }
-        .popup-header { color: white; padding: 10px; font-weight: bold; font-size: 14px; text-align: center; }
-        .popup-body { padding: 12px; font-size: 13px; line-height: 1.5; }
-        .popup-body a { color: #007bff; text-decoration: none; }
+        .btn-reset { padding: 4px 10px; font-size: 11px; border-radius: 12px; }
         
-        .btn-reset { padding: 5px 12px; font-size: 12px; border-radius: 15px; }
+        /* 줌 컨트롤 위치 조정 (패널에 안 가려지게) */
+        .leaflet-top.leaflet-left { top: 10px; }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
 
-    <div class="info-container">
-        <div class="header-row">
-            <h6>📊 기관현황 (숫자 클릭 시 이동)</h6>
-            <button onclick="resetView()" class="btn btn-dark btn-reset">전체보기</button>
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="sheet-header" onclick="toggleSheet()">
+            <div class="handle"></div>
+            <div class="header-title">
+                <h6>📊 지역별 기관현황 <span id="toggleText" style="font-weight:normal; font-size:11px; color:#666;">(터치하여 펼치기)</span></h6>
+                <button onclick="event.stopPropagation(); resetView();" class="btn btn-dark btn-reset">전체보기</button>
+            </div>
         </div>
-        <div class="table-wrapper">
+        <div class="sheet-content">
             <table>
                 <thead>
                     <tr>
@@ -63,18 +69,31 @@
                 </thead>
                 <tbody id="statTable"></tbody>
             </table>
-        </div>
-        <div style="font-size: 10px; color: #666; margin-top: 8px; text-align: center;">
-            📍 주소를 누르면 <b>네이버 지도</b>로 연결됩니다.
+            <div style="font-size: 10px; color: #777; margin-top: 15px; line-height: 1.5;">
+                📌 <b>이용안내:</b> 파란 숫자를 누르면 지도가 해당 지역으로 이동하며, 마커를 누르면 상세 정보와 길찾기 링크가 나타납니다.
+            </div>
         </div>
     </div>
 
 <script>
+    // 패널 여닫기 함수
+    function toggleSheet() {
+        const sheet = document.getElementById('bottomSheet');
+        const text = document.getElementById('toggleText');
+        sheet.classList.toggle('expanded');
+        if(sheet.classList.contains('expanded')) {
+            text.innerText = "(터치하여 접기)";
+        } else {
+            text.innerText = "(터치하여 펼치기)";
+        }
+    }
+
+    // 데이터 세팅 (전달해주신 정밀 좌표 적용)
     var locations = [
         {"name": "인천기초학력지원센터(경인교대)", "addr": "인천 계양구 계산로 62", "cat": "both", "lat": 37.538426, "lon": 126.716534, "dist": "계양구", "tel": "032-540-1403", "rem": "교육청 직영 센터"},
         {"name": "검단아동발달센터", "addr": "인천 서구 이음대로 378", "cat": "both", "lat": 37.599734, "lon": 126.700389, "dist": "검단구", "tel": "070-8282-8285", "rem": "신규 협약"},
-        {"name": "맘친구아동심리발달센터", "addr": "인천 중구 하늘별빛로 65", "cat": "both", "lat": 37.489611, "lon": 126.562428, "dist": "영종구", "tel": "010-2807-9403", "rem": "찾아가는 교육 가능"},
-        {"name": "해수아동발달연구소", "addr": "부천시 길주로 91", "cat": "both", "lat": 37.506507, "lon": 126.752553, "dist": "기타", "tel": "032-715-5808", "rem": "부천 상동 소재"},
+        {"name": "맘친구아동심리발달센터", "addr": "인천 중구 하늘별빛로 65", "cat": "both", "lat": 37.489611, "lon": 126.562428, "dist": "영종구", "tel": "010-2807-9403", "rem": "학교 찾아가는 교육 가능"},
+        {"name": "해수아동발달연구소", "addr": "경기도 부천시 길주로 91", "cat": "both", "lat": 37.506507, "lon": 126.752553, "dist": "기타", "tel": "032-715-5808", "rem": "부천 상동 소재"},
         {"name": "아이꿈트리언어심리상담", "addr": "인천 서구 이음5로 80", "cat": "both", "lat": 37.599817, "lon": 126.715661, "dist": "검단구", "tel": "032-564-7323", "rem": "신규 협약"},
         {"name": "이루언어심리발달센터(검단)", "addr": "인천 서구 이음5로 30", "cat": "both", "lat": 37.594314, "lon": 126.711526, "dist": "검단구", "tel": "032-710-7254", "rem": "신규"},
         {"name": "다올언어심리상담센터(본점)", "addr": "인천 부평구 부개로 61-6", "cat": "both", "lat": 37.503400, "lon": 126.739612, "dist": "부평구", "tel": "032-502-3858", "rem": "신규"},
@@ -83,7 +102,7 @@
         {"name": "우리아이발달지원센터", "addr": "인천 남동구 만수서로105번길 47", "cat": "both", "lat": 37.463198, "lon": 126.739546, "dist": "남동구", "tel": "032-464-1871", "rem": "만수주공 인근"},
         {"name": "새휴라임심리발달센터", "addr": "인천 남동구 장승남로 48", "cat": "both", "lat": 37.443371, "lon": 126.737620, "dist": "남동구", "tel": "032-465-2252", "rem": ""},
         {"name": "이화공감심리상담센터", "addr": "인천 부평구 길주로 659", "cat": "both", "lat": 37.507347, "lon": 126.735740, "dist": "부평구", "tel": "032-508-5191", "rem": "신규"},
-        {"name": "동주학습심리센터", "addr": "부천시 원미구 길주로 111", "cat": "both", "lat": 37.506551, "lon": 126.754826, "dist": "기타", "tel": "032-236-5757", "rem": ""},
+        {"name": "동주학습심리센터", "addr": "부천시 길주로 111", "cat": "both", "lat": 37.506551, "lon": 126.754826, "dist": "기타", "tel": "032-236-5757", "rem": ""},
         {"name": "초록소리", "addr": "부천시 부일로 232", "cat": "both", "lat": 37.488409, "lon": 126.755694, "dist": "기타", "tel": "032-323-7866", "rem": ""},
         {"name": "톡톡언어학습심리센터", "addr": "인천 연수구 독배로 68", "cat": "both", "lat": 37.426804, "lon": 126.645245, "dist": "연수구", "tel": "032-833-5579", "rem": ""},
         {"name": "햇살나무발달센터", "addr": "인천 서구 원당대로 676", "cat": "both", "lat": 37.593484, "lon": 126.676475, "dist": "검단구", "tel": "010-7579-8776", "rem": "신규"},
@@ -91,69 +110,71 @@
         {"name": "경계선지능인지원센터", "addr": "인천 서구 백범로 622", "cat": "border", "lat": 37.478327, "lon": 126.686574, "dist": "서구", "tel": "010-8282-6911", "rem": "찾아가는 교육 전용"},
         {"name": "대교에듀캠프 드림멘토", "addr": "서울 강서구 공항대로 186", "cat": "border", "lat": 37.559258, "lon": 126.827994, "dist": "기타", "tel": "010-4042-9039", "rem": "찾아가는 교육 가능"},
         {"name": "해바람아동발달센터", "addr": "인천 동구 송현로 1", "cat": "border", "lat": 37.477203, "lon": 126.633378, "dist": "미추홀구", "tel": "032-777-6616", "rem": "찾아가는 교육 가능"},
-        {"name": "검단라파언어심리센터", "addr": "인천 서구 검단로459번길 3-2", "cat": "border", "lat": 37.601762, "lon": 126.654738, "dist": "검단구", "tel": "032-565-7757", "rem": ""},
+        {"name": "검단라파언어심리센터", "addr": "인천 서구 검단로 459", "cat": "border", "lat": 37.601762, "lon": 126.654738, "dist": "검단구", "tel": "032-565-7757", "rem": ""},
         {"name": "남동구아동복지종합센터", "addr": "인천 남동구 용천로 208", "cat": "border", "lat": 37.468553, "lon": 126.714038, "dist": "남동구", "tel": "032-421-6100", "rem": ""},
         {"name": "논현심리언어연구소", "addr": "인천 남동구 논고개로 123", "cat": "border", "lat": 37.401679, "lon": 126.722095, "dist": "남동구", "tel": "032-424-2752", "rem": ""},
-        {"name": "새봄심리상담센터", "addr": "인천 부평구 부흥로294번길 4", "cat": "border", "lat": 37.498280, "lon": 126.724253, "dist": "부평구", "tel": "032-361-1368", "rem": "신규"},
-        {"name": "온맘심리상담센터", "addr": "인천 강화군 강화대로216번길 53", "cat": "border", "lat": 37.745123, "lon": 126.504680, "dist": "강화군", "tel": "032-934-0356", "rem": ""},
-        {"name": "이룸감각통합상담센터", "addr": "인천 남동구 논고개로123번길 17", "cat": "border", "lat": 37.401898, "lon": 126.723065, "dist": "남동구", "tel": "070-4105-2925", "rem": "신규"},
-        {"name": "한솔아동발달(김포점)", "addr": "김포시 김포한강9로76번길 41", "cat": "border", "lat": 37.644641, "lon": 126.627298, "dist": "기타", "tel": "031-996-2282", "rem": "신규"},
+        {"name": "새봄심리상담센터", "addr": "인천 부평구 부흥로 294", "cat": "border", "lat": 37.498280, "lon": 126.724253, "dist": "부평구", "tel": "032-361-1368", "rem": "신규"},
+        {"name": "온맘심리상담센터", "addr": "인천 강화군 강화대로 216", "cat": "border", "lat": 37.745123, "lon": 126.504680, "dist": "강화군", "tel": "032-934-0356", "rem": ""},
+        {"name": "이룸감각통합상담센터", "addr": "인천 남동구 논고개로 123", "cat": "border", "lat": 37.401898, "lon": 126.723065, "dist": "남동구", "tel": "070-4105-2925", "rem": "신규"},
+        {"name": "한솔아동발달(김포점)", "addr": "김포시 김포한강9로 76", "cat": "border", "lat": 37.644641, "lon": 126.627298, "dist": "기타", "tel": "031-996-2282", "rem": "신규"},
         {"name": "365매일열린의원", "addr": "김포시 김포한강9로 109", "cat": "dyslexia", "lat": 37.646725, "lon": 126.625224, "dist": "기타", "tel": "031-981-7527", "rem": "신규"},
         {"name": "다올언어심리(부개점)", "addr": "인천 부평구 동수천로 132", "cat": "dyslexia", "lat": 37.497261, "lon": 126.737361, "dist": "부평구", "tel": "032-719-3856", "rem": ""},
-        {"name": "언어심리상담 든든한벗", "addr": "부천시 길주로 280", "cat": "dyslexia", "lat": 37.503052, "lon": 126.773242, "dist": "기타", "tel": "032-321-4555", "rem": "신규"},
+        {"name": "언어심리상담 든든한벗", "addr": "경기도 부천시 길주로 280", "cat": "dyslexia", "lat": 37.503052, "lon": 126.773242, "dist": "기타", "tel": "032-321-4555", "rem": "신규"},
         {"name": "우리아이심리발달센터", "addr": "인천 부평구 부평문화로 28", "cat": "dyslexia", "lat": 37.493209, "lon": 126.720056, "dist": "부평구", "tel": "032-528-1477", "rem": "신규"},
-        {"name": "이루언어심리(김포본점)", "addr": "김포시 유현로33번길 76", "cat": "dyslexia", "lat": 37.600292, "lon": 126.726150, "dist": "기타", "tel": "031-981-0426", "rem": "신규"},
+        {"name": "이루언어심리(김포본점)", "addr": "김포시 유현로 33", "cat": "dyslexia", "lat": 37.600292, "lon": 126.726150, "dist": "기타", "tel": "031-981-0426", "rem": "신규"},
         {"name": "다올언어심리(마곡점)", "addr": "서울 강서구 공항대로 186", "cat": "dyslexia", "lat": 37.5585, "lon": 126.8315, "dist": "기타", "tel": "010-4042-9039", "rem": "신규"}
     ];
 
     // 지도 초기화
-    var map = L.map('map', { zoomControl: false }).setView([37.53, 126.65], 11);
+    var map = L.map('map').setView([37.53, 126.70], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    
     var markerGroup = L.featureGroup().addTo(map);
 
     function renderMarkers() {
-        markerGroup.clearLayers();
         locations.forEach(function(loc) {
             var color = loc.cat === 'border' ? '#007bff' : (loc.cat === 'dyslexia' ? '#fd7e14' : '#dc3545');
             var marker = L.circleMarker([loc.lat, loc.lon], {
                 radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9
             }).addTo(markerGroup);
 
-            // 네이버 지도 검색 URL 생성
             var naverMapUrl = "https://map.naver.com/v5/search/" + encodeURIComponent(loc.addr);
-
             marker.bindPopup(`
-                <div class="popup-header" style="background:${color}">${loc.name}</div>
-                <div class="popup-body">
-                    <b>📍 주소:</b> <a href="${naverMapUrl}" target="_blank">${loc.addr}</a><br>
-                    <b>📞 전화:</b> <a href="tel:${loc.tel}">${loc.tel}</a><br>
-                    <hr style="margin:8px 0">
-                    <small><b>참고:</b> ${loc.rem}</small>
+                <div style="width:240px; margin:-10px;">
+                    <div style="background:${color}; color:white; padding:10px; font-weight:bold;">${loc.name}</div>
+                    <div style="padding:10px; font-size:13px;">
+                        📍 주소: <a href="${naverMapUrl}" target="_blank">${loc.addr}</a><br>
+                        📞 전화: <a href="tel:${loc.tel}">${loc.tel}</a><hr>
+                        <small>${loc.rem}</small>
+                    </div>
                 </div>
             `);
         });
     }
 
+    // 지역 클릭 시 패널을 닫고 해당 위치로 이동
     function zoomToDistrict(cat, dist) {
         var filtered = locations.filter(d => d.cat === cat && d.dist === dist);
         if (filtered.length > 0) {
             var bounds = L.latLngBounds(filtered.map(d => [d.lat, d.lon]));
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+            
+            // 이동 후 정보창은 자동으로 접음 (지도를 더 잘 보게 함)
+            const sheet = document.getElementById('bottomSheet');
+            if(sheet.classList.contains('expanded')) toggleSheet();
         }
     }
 
-    function resetView() { map.setView([37.53, 126.65], 11); }
+    function resetView() { map.setView([37.53, 126.70], 11); }
 
     function updateStats() {
         var districts = ["미추홀구", "영종구", "서구", "검단구", "부평구", "계양구", "남동구", "연수구", "강화군", "기타"];
-        var categories = [{ id: "border", name: "경계선지능" }, { id: "dyslexia", name: "난독증" }, { id: "both", name: "복합(경계+난독)" }];
+        var categories = [{id:"border", name:"경계선지능"}, {id:"dyslexia", name:"난독증"}, {id:"both", name:"복합지원"}];
         var html = "";
         categories.forEach(cat => {
-            html += `<tr><td style="background:#f9f9f9; font-weight:bold; text-align:left;">${cat.name}</td>`;
+            html += `<tr><td style="background:#f9f9f9; font-weight:bold;">${cat.name}</td>`;
             districts.forEach(dist => {
                 var count = locations.filter(l => l.cat === cat.id && l.dist === dist).length;
-                html += count > 0 ? `<td class="clickable" onclick="zoomToDistrict('${cat.id}', '${dist}')">${count}</td>` : `<td class="disabled">0</td>`;
+                html += count > 0 ? `<td class="clickable" onclick="zoomToDistrict('${cat.id}', '${dist}')">${count}</td>` : `<td style="color:#ccc">0</td>`;
             });
             html += "</tr>";
         });
