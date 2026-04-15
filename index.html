@@ -55,6 +55,43 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: va
 .mf-btn { background: rgba(255,255,255,0.97); border: 1.5px solid; border-radius: 8px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
 .mf-btn.off { background: #eee !important; color: #aaa !important; border-color: #ddd !important; }
 
+/* ── 기관 목록 모달 ── */
+#modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,0.45); align-items: flex-end;
+}
+#modal-overlay.show { display: flex; }
+#modal-box {
+  background: white; border-radius: 20px 20px 0 0;
+  width: 100%; max-height: 80vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.2);
+  animation: slideUp 0.28s cubic-bezier(.4,0,.2,1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header {
+  padding: 16px 18px 12px; border-bottom: 1px solid #EDEAE5;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.modal-title { font-size: 15px; font-weight: 700; }
+.modal-close {
+  width: 28px; height: 28px; border-radius: 50%; background: #F0EDE8;
+  border: none; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+}
+.modal-body { overflow-y: auto; padding: 12px 14px 24px; flex: 1; }
+.modal-body::-webkit-scrollbar { display: none; }
+.modal-card {
+  background: var(--surface); border: 1px solid #EDEAE5; border-radius: 12px;
+  padding: 13px 15px; margin-bottom: 10px;
+}
+.modal-card-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.modal-card-addr { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; line-height: 1.5; }
+.modal-card-info { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
+.modal-card-info strong { color: var(--text-secondary); font-weight: 600; margin-right: 3px; }
+.modal-card-btns { margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0EDE8; display: flex; align-items: center; justify-content: space-between; }
+.modal-tel { font-size: 12px; font-weight: 700; color: var(--text-primary); text-decoration: none; }
+.modal-map-btn { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 8px; background: var(--col-border); color: white; border: none; cursor: pointer; font-family: inherit; }
+
 /* ── BOTTOM SHEET ── */
 #bottom-sheet {
   position: absolute;
@@ -234,6 +271,17 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: va
 
     <!-- 내 위치 버튼 -->
     <button class="loc-btn" id="loc-btn" title="내 위치에서 가까운 기관 찾기">📍</button>
+
+    <!-- 기관 목록 모달 -->
+    <div id="modal-overlay">
+      <div id="modal-box">
+        <div class="modal-header">
+          <span class="modal-title" id="modal-title"></span>
+          <button class="modal-close" id="modal-close">✕</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </div>
 
     <!-- 바텀시트 -->
     <div id="bottom-sheet">
@@ -454,6 +502,11 @@ var layerGroups = {
   border:   L.layerGroup().addTo(leafMap),
   dyslexia: L.layerGroup().addTo(leafMap)
 };
+var labelGroups = {
+  both:     L.layerGroup().addTo(leafMap),
+  border:   L.layerGroup().addTo(leafMap),
+  dyslexia: L.layerGroup().addTo(leafMap)
+};
 var layerVisible = {both:true, border:true, dyslexia:true};
 
 centers.forEach(function(c) {
@@ -484,6 +537,16 @@ centers.forEach(function(c) {
     + '<a href="https://map.naver.com/v5/search/'+nq+'" target="_blank" class="popup-naver">🗺 네이버 지도에서 길찾기</a>'
     + '</div></div>';
   c._marker = L.marker([c.lat,c.lon],{icon:icon}).bindPopup(html,{maxWidth:300}).addTo(layerGroups[c.cat]);
+
+  /* 기관명 라벨 */
+  var labelIcon = L.divIcon({
+    className:'',
+    html:'<div style="font-size:9pt;font-weight:700;color:'+col+';text-align:center;white-space:nowrap;'
+        +'text-shadow:-1.5px 0 #fff,0 1.5px #fff,1.5px 0 #fff,0 -1.5px #fff;pointer-events:none;'
+        +'width:130px;margin-left:-65px;">'+c.name+'</div>',
+    iconSize:[130,16], iconAnchor:[65,-2]
+  });
+  L.marker([c.lat,c.lon],{icon:labelIcon,interactive:false,zIndexOffset:-50}).addTo(labelGroups[c.cat]);
 });
 
 /* ── 레이어 필터 버튼 ── */
@@ -494,10 +557,12 @@ document.querySelectorAll('.mf-btn').forEach(function(btn) {
     layerVisible[cat] = !layerVisible[cat];
     if (layerVisible[cat]) {
       leafMap.addLayer(layerGroups[cat]);
+      leafMap.addLayer(labelGroups[cat]);
       btn.classList.remove('off');
       btn.style.borderColor = col; btn.style.color = col;
     } else {
       leafMap.removeLayer(layerGroups[cat]);
+      leafMap.removeLayer(labelGroups[cat]);
       btn.classList.add('off');
     }
   });
@@ -521,7 +586,7 @@ function buildStatsTable() {
     DISTS.forEach(function(dist) {
       var matches = centers.filter(function(c){ return c.cat===cat && c.dist===dist; });
       if (matches.length > 0) {
-        tbody += '<td class="stats-td-link" data-lat="'+matches[0].lat+'" data-lon="'+matches[0].lon+'" data-count="'+matches.length+'">'+matches.length+'</td>';
+        tbody += '<td class="stats-td-link" data-cat="'+cat+'" data-dist="'+dist+'">'+matches.length+'</td>';
       } else {
         tbody += '<td class="stats-td-zero">0</td>';
       }
@@ -530,16 +595,70 @@ function buildStatsTable() {
   });
   tbody += '</tbody>';
   document.getElementById('stats-table').innerHTML = thead + tbody;
+
+  /* 숫자 클릭 → 모달 기관 목록 */
   document.querySelectorAll('.stats-td-link').forEach(function(td) {
     td.addEventListener('click', function() {
-      var lat = parseFloat(td.getAttribute('data-lat'));
-      var lon = parseFloat(td.getAttribute('data-lon'));
-      collapseSheet();
-      leafMap.setView([lat, lon], 14);
-      setTimeout(function(){ leafMap.invalidateSize(); }, 100);
+      var cat = td.getAttribute('data-cat');
+      var dist = td.getAttribute('data-dist');
+      showModal(cat, dist);
     });
   });
 }
+
+/* ── 모달 ── */
+function showModal(cat, dist) {
+  var matched = centers.filter(function(c){ return c.cat===cat && c.dist===dist; });
+  var catName = {both:'난독+경계선 지능', border:'경계선 지능', dyslexia:'난독증'}[cat];
+  document.getElementById('modal-title').textContent = dist+' · '+catName+' ('+matched.length+'개)';
+  document.getElementById('modal-body').innerHTML = matched.map(function(c) {
+    var col = CAT[c.cat].color;
+    var idx = centers.indexOf(c);
+    var nq = encodeURIComponent(c.addr+' '+c.name);
+    var visitBadge = c.visit ? '<span class="visit-badge">🚶 찾아가는 교육</span>' : '';
+    var newBadge = c.isNew ? '<span class="card-new">신규</span>' : '';
+    return '<div class="modal-card">'
+      + '<div class="modal-card-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+col+';flex-shrink:0;"></span>'
+      + c.name + newBadge + visitBadge + '</div>'
+      + '<div class="modal-card-addr">📍 '+c.addr+'</div>'
+      + (c.hours ? '<div class="modal-card-info"><strong>운영</strong>'+c.hours+'</div>' : '')
+      + (c.transit ? '<div class="modal-card-info"><strong>교통</strong>'+c.transit+'</div>' : '')
+      + (c.visit ? '<div class="modal-card-info" style="color:#8B5CF6;font-weight:600;">🚶 학교로 찾아가는 교육 가능</div>' : '')
+      + '<div class="modal-card-btns">'
+      + '<a class="modal-tel" href="tel:'+c.tel+'" onclick="event.stopPropagation()">📞 '+c.tel+'</a>'
+      + '<button class="modal-map-btn" data-idx="'+idx+'">지도에서 보기 →</button>'
+      + '</div></div>';
+  }).join('');
+
+  /* 지도에서 보기 버튼 */
+  document.querySelectorAll('.modal-map-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var c = centers[parseInt(btn.getAttribute('data-idx'))];
+      closeModal();
+      collapseSheet();
+      /* 지도 탭으로 전환 */
+      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+      document.querySelector('[data-tab="map"]').classList.add('active');
+      document.getElementById('view-map').classList.add('active');
+      setTimeout(function(){
+        leafMap.invalidateSize();
+        leafMap.setView([c.lat, c.lon], 16);
+        if (c._marker) c._marker.openPopup();
+      }, 150);
+    });
+  });
+
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
 
 function expandSheet() {
   isExpanded = true;
