@@ -1,175 +1,724 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>2026 인천 학습종합클리닉 지도</title>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
-    <style>
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
-        #map { width: 100%; height: 100%; position: absolute; top: 0; bottom: 0; z-index: 1; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>2026 인천 학습종합클리닉 협약기관 안내</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --col-both:    #E05C2A;
+  --col-border:  #3A7BD5;
+  --col-dyslexia:#2AAB6B;
+  --col-visit:   #8B5CF6;
+  --bg: #F7F5F2;
+  --surface: #FFFFFF;
+  --text-primary: #1A1714;
+  --text-secondary: #6B6560;
+  --text-muted: #A09990;
+  --radius: 14px;
+  --shadow: 0 2px 16px rgba(0,0,0,0.08);
+  --header-h: 60px;
+  --tab-h: 46px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
 
-        /* 범례 스타일 - 요청사항 반영 */
-        .legend {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: white; padding: 10px; border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 11px; line-height: 1.8;
-        }
-        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid #fff; }
+/* ── HEADER ── */
+.header { background: var(--surface); border-bottom: 1px solid #E8E4DE; padding: 0 20px; position: sticky; top: 0; z-index: 1100; }
+.header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 14px; height: var(--header-h); }
+.logo-badge { width: 36px; height: 36px; background: var(--col-both); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-badge svg { width: 20px; height: 20px; fill: white; }
+.header-title { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+.header-sub { font-size: 12px; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
 
-        /* 바텀 시트 스타일 */
-        .bottom-sheet {
-            position: absolute; bottom: 0; width: 100%; z-index: 1000;
-            background: white; border-radius: 25px 25px 0 0;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            transition: height 0.4s ease;
-            height: 100px; display: flex; flex-direction: column;
-        }
-        .bottom-sheet.expanded { height: 70%; }
-        .sheet-header { padding: 10px; cursor: pointer; text-align: center; border-bottom: 1px solid #eee; }
-        .handle { width: 40px; height: 5px; background: #ccc; border-radius: 3px; margin: 0 auto 10px; }
-        .sheet-content { flex: 1; overflow: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
-        
-        /* 테이블 및 팝업 스타일 */
-        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 11px; min-width: 600px; }
-        th, td { padding: 8px; border: 1px solid #dee2e6; }
-        .clickable { color: #007bff; text-decoration: underline; font-weight: bold; cursor: pointer; }
-        .popup-header { color: white; padding: 8px 12px; font-weight: bold; border-radius: 8px 8px 0 0; font-size: 14px; }
-        .popup-body { padding: 12px; font-size: 13px; line-height: 1.6; }
-    </style>
+/* ── TAB ── */
+.tab-bar { display: flex; background: var(--surface); border-bottom: 1px solid #E8E4DE; position: sticky; top: var(--header-h); z-index: 1099; }
+.tab-btn { flex: 1; height: var(--tab-h); font-size: 13px; font-weight: 500; color: var(--text-muted); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── MAP ── */
+#map-view { position: relative; height: calc(100vh - var(--header-h) - var(--tab-h)); overflow: hidden; }
+#map { width: 100%; height: 100%; }
+
+.map-legend { position: absolute; top: 12px; left: 12px; z-index: 800; background: rgba(255,255,255,0.97); border: 1px solid #E8E4DE; border-radius: 12px; padding: 11px 13px; box-shadow: var(--shadow); }
+.legend-title { font-weight: 700; margin-bottom: 7px; font-size: 11px; color: var(--text-secondary); letter-spacing: 0.5px; }
+.legend-item { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; font-size: 12px; font-weight: 500; }
+.legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+.map-filters { position: absolute; top: 12px; right: 12px; z-index: 800; display: flex; flex-direction: column; gap: 5px; }
+.mf-btn { background: rgba(255,255,255,0.97); border: 1.5px solid; border-radius: 8px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.mf-btn.off { background: #eee !important; color: #aaa !important; border-color: #ddd !important; }
+
+/* ── BOTTOM SHEET ── */
+#bottom-sheet {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 900;
+  background: white;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.13);
+  transition: transform 0.32s cubic-bezier(.4,0,.2,1);
+  transform: translateY(0); /* 기본: 펼쳐진 상태 */
+}
+#bottom-sheet.collapsed { transform: translateY(calc(100% - 52px)); }
+
+.bs-handle-area {
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.bs-handle-bar { width: 36px; height: 4px; background: #D0CBC4; border-radius: 99px; }
+.bs-handle-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.3px; }
+
+.bs-content { padding: 0 12px 16px; max-height: 42vh; overflow-y: auto; }
+.bs-content::-webkit-scrollbar { display: none; }
+
+.bs-top-row { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 10px; }
+.bs-title { font-size: 14px; font-weight: 700; }
+.bs-full-btn { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px; background: #1A1714; color: white; border: none; cursor: pointer; font-family: inherit; }
+
+/* 지역별 현황 표 */
+.stats-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.stats-table th { background: #F7F5F2; font-weight: 700; color: var(--text-secondary); padding: 7px 6px; text-align: center; border-bottom: 1px solid #EDEAE5; white-space: nowrap; position: sticky; top: 0; }
+.stats-table th:first-child { text-align: left; padding-left: 8px; }
+.stats-table td { padding: 7px 6px; text-align: center; border-bottom: 1px solid #F5F2EE; }
+.stats-table td:first-child { text-align: left; font-weight: 700; padding-left: 8px; font-size: 11px; }
+.stats-table tr:last-child td { border-bottom: none; }
+.stats-td-link { color: #3A7BD5; font-weight: 700; cursor: pointer; text-decoration: underline; }
+.stats-td-zero { color: #D0CBC4; }
+.cat-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+.cat-pill.both     { background: #FFF0E8; color: var(--col-both); }
+.cat-pill.border   { background: #EAF1FB; color: var(--col-border); }
+.cat-pill.dyslexia { background: #E8F7EF; color: var(--col-dyslexia); }
+
+/* ── POPUP ── */
+.leaflet-popup-content-wrapper { border-radius: 16px !important; box-shadow: 0 8px 32px rgba(0,0,0,0.16) !important; padding: 0 !important; overflow: hidden !important; border: none !important; }
+.leaflet-popup-content { margin: 0 !important; width: 290px !important; }
+.popup-head { padding: 14px 16px 12px; color: white; }
+.popup-cat-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; opacity: 0.85; margin-bottom: 3px; }
+.popup-name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+.popup-body { padding: 12px 16px 16px; background: white; font-family: 'Noto Sans KR', sans-serif; }
+.popup-row { font-size: 12px; color: #1A1714; line-height: 1.6; margin-bottom: 4px; }
+.popup-rem { font-size: 11px; font-weight: 600; margin-top: 6px; }
+.popup-naver { display: block; margin-top: 10px; background: #03C75A; color: white; text-align: center; padding: 9px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 12px; }
+
+/* ── LIST ── */
+.list-view-wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 40px; }
+.search-bar-wrap { position: relative; margin-bottom: 14px; }
+.search-input { width: 100%; padding: 11px 16px 11px 40px; border: 1.5px solid #E8E4DE; border-radius: 12px; font-size: 14px; background: var(--surface); font-family: inherit; color: var(--text-primary); outline: none; }
+.search-input:focus { border-color: #B0AAA2; }
+.search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); opacity: 0.35; pointer-events: none; }
+.filter-chips { display: flex; gap: 7px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.chip { padding: 6px 14px; border-radius: 99px; border: 1.5px solid #E8E4DE; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; background: var(--surface); color: var(--text-secondary); font-family: inherit; flex-shrink: 0; transition: all 0.15s; }
+.chip.active-all      { background: var(--text-primary); color: white; border-color: var(--text-primary); }
+.chip.active-both     { background: var(--col-both);     color: white; border-color: var(--col-both); }
+.chip.active-border   { background: var(--col-border);   color: white; border-color: var(--col-border); }
+.chip.active-dyslexia { background: var(--col-dyslexia); color: white; border-color: var(--col-dyslexia); }
+.chip.active-visit    { background: var(--col-visit);    color: white; border-color: var(--col-visit); }
+.list-count { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; font-weight: 500; }
+.center-card { background: var(--surface); border: 1px solid #EDEAE5; border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px; }
+.card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.card-cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.card-name { font-size: 15px; font-weight: 700; flex: 1; line-height: 1.4; }
+.card-new { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; margin-left: 6px; vertical-align: middle; background: #FFF0E8; color: var(--col-both); }
+.cat-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+.cat-tag.both     { background: #FFF0E8; color: var(--col-both); }
+.cat-tag.border   { background: #EAF1FB; color: var(--col-border); }
+.cat-tag.dyslexia { background: #E8F7EF; color: var(--col-dyslexia); }
+.visit-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: #F3EEFF; color: var(--col-visit); margin-left: 6px; vertical-align: middle; }
+.card-addr { font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; line-height: 1.5; }
+.card-info-row { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+.card-info-row strong { color: var(--text-secondary); font-weight: 600; margin-right: 4px; }
+.card-bottom { margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0EDE8; display: flex; align-items: center; justify-content: space-between; }
+.card-tel { font-size: 13px; font-weight: 600; color: var(--text-primary); text-decoration: none; }
+.card-map-btn { font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 8px; background: #F3F0EB; color: var(--text-secondary); text-decoration: none; }
+.card-go-map { font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 8px; background: var(--col-border); color: white; border: none; cursor: pointer; font-family: inherit; }
+
+/* 내 위치 버튼 */
+.loc-btn {
+  position: absolute; bottom: 70px; right: 12px; z-index: 800;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: white; border: 1.5px solid #E8E4DE;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+  transition: background 0.15s;
+}
+.loc-btn:active { background: #F0EDE8; }
+
+/* 거리 배지 */
+.dist-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #EAF1FB; color: var(--col-border); margin-left: 6px; vertical-align: middle; }
+
+/* 가까운 기관 배너 */
+.near-banner { background: #EAF1FB; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: var(--col-border); font-weight: 600; display: none; align-items: center; justify-content: space-between; }
+.near-banner.show { display: flex; }
+.near-banner-close { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--col-border); padding: 0 4px; }
+
+/* 내 위치 마커 */
+.my-loc-dot { width: 16px; height: 16px; border-radius: 50%; background: #3A7BD5; border: 3px solid white; box-shadow: 0 0 0 3px rgba(58,123,213,0.3); }
+
+/* ── INFO ── */
+.info-view-wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+.info-section { background: var(--surface); border: 1px solid #EDEAE5; border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.info-section-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 14px; }
+.info-row { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid #F5F2EE; align-items: flex-start; }
+.info-row:last-child { border-bottom: none; padding-bottom: 0; }
+.info-num { width: 26px; height: 26px; border-radius: 50%; background: #F0EDE8; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; color: var(--text-secondary); }
+.info-body { flex: 1; }
+.info-label { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.info-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+.legend-big { display: flex; flex-direction: column; gap: 14px; }
+.legend-big-item { display: flex; gap: 12px; }
+.legend-big-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.lbt-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.lbt-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.contact-box { background: #F7F5F2; border-radius: 10px; padding: 16px; font-size: 13px; color: var(--text-secondary); line-height: 2; }
+.contact-name { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.contact-tel { font-size: 18px; font-weight: 700; color: var(--col-border); display: block; margin: 6px 0 4px; text-decoration: none; }
+
+@media (max-width: 540px) {
+  .header-sub { display: none; }
+  .leaflet-popup-content { width: 260px !important; }
+}
+</style>
 </head>
 <body>
 
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-badge">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+    </div>
+    <div class="header-title">인천학습종합클리닉센터 2026 협약기관 안내</div>
+    <div class="header-sub">난독증 및 경계선 지능 학생 지원</div>
+  </div>
+</header>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" data-tab="map">🗺 지도</button>
+  <button class="tab-btn" data-tab="list">📋 목록</button>
+  <button class="tab-btn" data-tab="info">ℹ 안내</button>
+</nav>
+
+<!-- MAP VIEW -->
+<div id="view-map" class="view active">
+  <div id="map-view">
     <div id="map"></div>
 
-    <div class="legend">
-        <div style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #eee;">📍 기관 구분</div>
-        <div class="legend-item"><span class="dot" style="background:#007bff;"></span> 경계선지능</div>
-        <div class="legend-item"><span class="dot" style="background:#fd7e14;"></span> 난독증</div>
-        <div class="legend-item"><span class="dot" style="background:#dc3545;"></span> 경계선지능 및 난독증</div>
+    <!-- 범례 -->
+    <div class="map-legend">
+      <div class="legend-title">유형</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E05C2A"></div>난독+경계선</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3A7BD5"></div>경계선 지능</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2AAB6B"></div>난독증</div>
     </div>
 
-    <div class="bottom-sheet" id="bottomSheet">
-        <div class="sheet-header" onclick="toggleSheet()">
-            <div class="handle"></div>
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:0 15px;">
-                <h6 style="margin:0; font-weight:bold;">📊 지역별 협약기관 현황</h6>
-                <button onclick="event.stopPropagation(); resetView();" class="btn btn-sm btn-dark" style="font-size:10px;">전체보기</button>
-            </div>
-        </div>
-        <div class="sheet-content">
-            <table>
-                <thead>
-                    <tr>
-                        <th>구분</th><th>미추홀</th><th>영종</th><th>서구</th><th>검단</th><th>부평</th><th>계양</th><th>남동</th><th>연수</th><th>강화</th><th>기타</th>
-                    </tr>
-                </thead>
-                <tbody id="statTable"></tbody>
-            </table>
-        </div>
+    <!-- 레이어 필터 -->
+    <div class="map-filters">
+      <button class="mf-btn" data-layer="both"     style="border-color:#E05C2A;color:#E05C2A;">난독+경계</button>
+      <button class="mf-btn" data-layer="border"   style="border-color:#3A7BD5;color:#3A7BD5;">경계선</button>
+      <button class="mf-btn" data-layer="dyslexia" style="border-color:#2AAB6B;color:#2AAB6B;">난독증</button>
     </div>
 
+    <!-- 내 위치 버튼 -->
+    <button class="loc-btn" id="loc-btn" title="내 위치에서 가까운 기관 찾기">📍</button>
+
+    <!-- 바텀시트 -->
+    <div id="bottom-sheet">
+      <div class="bs-handle-area" id="bs-handle">
+        <div class="bs-handle-bar"></div>
+        <div class="bs-handle-label">▼ 지역별 협약기관 현황</div>
+      </div>
+      <div class="bs-content">
+        <div class="bs-top-row">
+          <span class="bs-title">지역별 협약기관 현황</span>
+          <button class="bs-full-btn" id="bs-close-btn">전체보기</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="stats-table" id="stats-table"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LIST VIEW -->
+<div id="view-list" class="view">
+  <div class="list-view-wrap">
+    <div class="search-bar-wrap">
+      <svg class="search-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" id="list-search" type="text" placeholder="기관명, 지역, 주소 검색...">
+    </div>
+    <div class="filter-chips">
+      <button class="chip active-all"  data-chip="all">전체</button>
+      <button class="chip" data-chip="both">난독+경계선 지능</button>
+      <button class="chip" data-chip="border">경계선 지능</button>
+      <button class="chip" data-chip="dyslexia">난독증</button>
+      <button class="chip" data-chip="visit">찾아가는 교육</button>
+    </div>
+    <div class="near-banner" id="near-banner">
+      <span id="near-banner-text">📍 내 위치 기준 가까운 순으로 정렬됨</span>
+      <button class="near-banner-close" id="near-banner-close">✕</button>
+    </div>
+    <div class="list-count" id="list-count"></div>
+    <div id="list-container"></div>
+  </div>
+</div>
+
+<!-- INFO VIEW -->
+<div id="view-info" class="view">
+  <div class="info-view-wrap">
+
+    <div class="info-section">
+      <div class="info-section-title">지원 유형 안내</div>
+      <div class="legend-big">
+        <div class="legend-big-item">
+          <div class="legend-big-dot" style="background:#E05C2A"></div>
+          <div><div class="lbt-title">난독증 + 경계선 지능 지원</div><div class="lbt-desc">두 가지 영역 모두 지원 가능한 기관입니다.</div></div>
+        </div>
+        <div class="legend-big-item">
+          <div class="legend-big-dot" style="background:#3A7BD5"></div>
+          <div><div class="lbt-title">경계선 지능 지원</div><div class="lbt-desc">경계선 지능(느린 학습자) 아동을 위한 인지·학습 지원 기관입니다.</div></div>
+        </div>
+        <div class="legend-big-item">
+          <div class="legend-big-dot" style="background:#2AAB6B"></div>
+          <div><div class="lbt-title">난독증 지원</div><div class="lbt-desc">읽기·쓰기 어려움이 있는 아동을 위한 언어·난독 전문 지원 기관입니다.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">이용 방법</div>
+      <div class="info-row">
+        <div class="info-num">1</div>
+        <div class="info-body">
+          <div class="info-label">신청</div>
+          <div class="info-desc">인천학습종합클리닉센터 홈페이지에서 보호자가 직접 신청<br>
+          <a href="https://www.ice-clinic.kr/" target="_blank" style="color:#3A7BD5;font-weight:600;font-size:13px;word-break:break-all;">🔗 https://www.ice-clinic.kr/</a></div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-num">2</div>
+        <div class="info-body">
+          <div class="info-label">선정</div>
+          <div class="info-desc">대상자 선정 문자 발송 (신청 후 1~2주 내)</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-num">3</div>
+        <div class="info-body">
+          <div class="info-label">지원 방식</div>
+          <div class="info-desc">협약기관 중 보호자가 희망하는 기관에 연락하여 방문 후 심층 검사 실시, 검사 결과에 따라 맞춤지원 <strong>(30회기)</strong></div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-num">4</div>
+        <div class="info-body">
+          <div class="info-label">비용</div>
+          <div class="info-desc">교육청에서 심층검사비용 및 30회기 <strong>전액 지원</strong> (별도 비용 없음)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">문의</div>
+      <div class="contact-box">
+        <div class="contact-name">📞 인천학습종합클리닉센터</div>
+        <a class="contact-tel" href="tel:032-420-7645">032-420-7645</a>
+        🕐 월~금 09:00~18:00
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-    function toggleSheet() { document.getElementById('bottomSheet').classList.toggle('expanded'); }
+/* ═══════════════════════════════════
+   DATA
+═══════════════════════════════════ */
+var centers = [
+  /* ── BOTH ── */
+  {name:"인천기초학력지원센터(경인교대)",cat:"both",lat:37.538426,lon:126.716567,dist:"계양구",addr:"인천 계양구 계산로 62, 경인교육대학교 인천캠퍼스 예지관 1층",tel:"032-540-1403",transit:"경인교대역 4·5번출구(도보10분)",hours:"월~금 09:30~19:00",rem:"기관 방문·비대면·학교 찾아가는 교육",visit:true,isNew:false},
+  {name:"검단아동발달센터",cat:"both",lat:37.594054,lon:126.712714,dist:"검단구",addr:"인천 서구 이음대로 378, 612호(로뎀타워)",tel:"070-8282-8285",transit:"버스 75·1101 우미린더시그니처 하차",hours:"월~수 09:30~20:00 / 목~금 09:30~18:00 / 토 09:30~17:00",rem:"",visit:false,isNew:true},
+  {name:"맘친구아동심리발달센터",cat:"both",lat:37.489592,lon:126.562439,dist:"영종구",addr:"인천 중구 하늘별빛로 65번길 8-11, 메이채프라자 3층 303호",tel:"010-2807-9403",transit:"영종역 1번출구 (202·205·223번버스 한라비발디 하차)",hours:"월~금 10:00~20:00(13~14시 휴게) / 토 10:00~14:00",rem:"학교 찾아가는 교육 가능",visit:true,isNew:true},
+  {name:"해수아동발달연구소",cat:"both",lat:37.506567,lon:126.752511,dist:"기타",addr:"경기도 부천시 원미구 길주로 91, 504·505호",tel:"032-715-5808",transit:"상동역 6번출구(도보3분)",hours:"월~금 10:00~20:00 / 토 10:00~18:00",rem:"",visit:false,isNew:true},
+  {name:"아이꿈트리언어심리상담센터",cat:"both",lat:37.595567,lon:126.716189,dist:"검단구",addr:"인천 서구 이음5로 80, 701·702호",tel:"032-564-7323",transit:"계양역 1번출구 (66·76번버스 아라동행정복지센터 하차)",hours:"월~금 10:00~19:00 / 토 09:00~17:00",rem:"",visit:false,isNew:true},
+  {name:"이루언어심리발달센터(검단점)",cat:"both",lat:37.593823,lon:126.710937,dist:"검단구",addr:"인천 서구 이음5로 30, 411호",tel:"032-710-7254",transit:"계양역 1번출구 (841번버스 아라역사거리 하차)",hours:"월~일 10:00~19:00",rem:"",visit:false,isNew:true},
+  {name:"다올언어심리상담센터(본점)",cat:"both",lat:37.503363,lon:126.739554,dist:"부평구",addr:"인천 부평구 부개로 61-6, 203호",tel:"032-502-3858",transit:"삼산체육관역 2번출구(도보7분)",hours:"월~금 10:00~21:00 / 토 09:00~17:00",rem:"",visit:false,isNew:true},
+  {name:"김영효EN학습센터",cat:"both",lat:37.398068,lon:126.649648,dist:"연수구",addr:"인천 연수구 신송로 154, 2층 204호",tel:"032-713-8506",transit:"캠퍼스타운역 3번출구 (55번버스 푸르지오월드마크 하차)",hours:"화~금 12:00~20:00 / 토 09:00~15:00",rem:"",visit:false,isNew:true},
+  {name:"엘키즈언어심리상담센터",cat:"both",lat:37.385311,lon:126.644077,dist:"연수구",addr:"인천 연수구 테크노파크로 111번길 11, 시카고타워 303호",tel:"032-831-8865",transit:"인천대입구역 1번출구(도보7분)",hours:"월~금 13:00~20:00",rem:"",visit:false,isNew:true},
+  {name:"우리아이발달지원센터",cat:"both",lat:37.463161,lon:126.739527,dist:"남동구",addr:"인천 남동구 만수서로 105번길 47, 2~3층",tel:"032-464-1871",transit:"버스 30·11·534·8·37·33·36 만수주공11단지 하차",hours:"월~금 10:00~21:00 / 토~일 09:00~18:00",rem:"",visit:false,isNew:false},
+  {name:"새휴라임심리언어발달센터",cat:"both",lat:37.443308,lon:126.737639,dist:"남동구",addr:"인천 남동구 장승남로 48, 4층 405호",tel:"032-465-2252",transit:"남동구청역 4번출구(도보11분)",hours:"월~금 09:00~21:00 / 토 09:00~18:00",rem:"",visit:false,isNew:false},
+  {name:"이화공감심리상담센터",cat:"dyslexia",lat:37.507330,lon:126.735762,dist:"부평구",addr:"인천 부평구 길주로 659, 미라쥬타워 508호",tel:"032-508-5191",transit:"굴포천역 8번출구(도보6분)",hours:"월~금 10:00~20:00 / 토 10:00~15:00",rem:"",visit:false,isNew:true},
+  {name:"동주학습심리상담센터",cat:"both",lat:37.506457,lon:126.754890,dist:"기타",addr:"경기도 부천시 원미구 길주로 111, 센타프라자 403호",tel:"032-236-5757",transit:"상동역 8번출구(도보2분)",hours:"월~금 10:00~20:00 / 토 08:00~18:00",rem:"학교 찾아가는 교육 가능",visit:true,isNew:false},
+  {name:"초록소리",cat:"both",lat:37.488152,lon:126.755730,dist:"기타",addr:"경기도 부천시 부일로 232, 부천상동행복주택 2층 17호",tel:"032-323-7866",transit:"송내역 3번출구(도보3분)",hours:"월~금 10:00~19:00 / 토 09:00~14:00",rem:"",visit:false,isNew:false},
+  {name:"톡톡언어학습심리센터",cat:"both",lat:37.426808,lon:126.645196,dist:"연수구",addr:"인천 연수구 독배로 68, 유진메디타워 501호",tel:"032-833-5579",transit:"송도역 1번출구(도보18분)",hours:"월~금 10:00~19:00 / 토 09:00~14:00",rem:"",visit:false,isNew:true},
+  {name:"햇살나무발달센터",cat:"both",lat:37.593433,lon:126.676443,dist:"검단구",addr:"인천 서구 원당대로 676, 7층 702호(당하동, 제일아이조움)",tel:"010-7579-8776",transit:"완정역 2번출구(도보5분)",hours:"월~금 10:00~19:10 / 토 10:00~15:00",rem:"",visit:false,isNew:true},
+  {name:"구래아동발달센터",cat:"both",lat:37.644247,lon:126.627371,dist:"기타",addr:"경기도 김포시 김포한강9로 76번길 37(경서프라자), 1002호",tel:"070-4012-7535",transit:"구래역 4번출구(도보2분)",hours:"월~금 09:30~19:00 / 토 10:00~14:00",rem:"",visit:false,isNew:false},
+  /* ── BORDER ── */
+  {name:"경계선지능인지원센터",cat:"border",lat:37.478336,lon:126.686598,dist:"서구",addr:"인천 서구 백범로 622번길 9, 북부근로자복지관 3층",tel:"010-8282-6911",transit:"가재울역 3번출구(도보10분)",hours:"",rem:"초등 대상 학교로 찾아가는 교육만 가능",visit:true,isNew:false},
+  {name:"대교에듀캠프 드림멘토",cat:"border",lat:37.559300,lon:126.828048,dist:"기타",addr:"서울 강서구 공항대로 186, 로뎀타워 3층",tel:"010-4042-9039",transit:"마곡역 5번출구(도보2분)",hours:"월~금 10:00~19:00 / 토 09:00~16:00",rem:"학교 찾아가는 교육 가능",visit:true,isNew:false},
+  {name:"해바람아동발달센터",cat:"border",lat:37.477245,lon:126.633303,dist:"미추홀구",addr:"인천 동구 송현로 1, 송현프라자 8층",tel:"032-777-6616",transit:"동인천역 4번출구(도보2분)",hours:"월~금 11:00~19:00",rem:"학교 찾아가는 교육 가능",visit:true,isNew:true},
+  {name:"검단라파언어심리센터",cat:"border",lat:37.601796,lon:126.654738,dist:"검단구",addr:"인천 서구 검단로 459번길 3-2, 401·403호(왕길동, 파크프라자)",tel:"032-565-7757",transit:"검단사거리역 3번출구(도보3분)",hours:"월~금 10:00~20:00 / 토 09:00~18:00",rem:"",visit:false,isNew:false},
+  {name:"남동구아동복지종합센터",cat:"border",lat:37.468553,lon:126.714092,dist:"남동구",addr:"인천 남동구 용천로 208, 사회복지회관 201호",tel:"032-421-6100",transit:"간석오거리역 2번출구(도보11분)",hours:"월~금 09:00~19:00",rem:"",visit:false,isNew:false},
+  {name:"논현심리언어연구소",cat:"border",lat:37.402337,lon:126.722038,dist:"남동구",addr:"인천 남동구 논고개로 123번길 34(논현동, 칼리오페) 6층",tel:"032-424-2752",transit:"인천논현역 3번출구(도보4분)",hours:"월~금 10:00~20:00 / 토 09:00~15:00",rem:"",visit:false,isNew:false},
+  {name:"새봄심리상담센터",cat:"border",lat:37.498335,lon:126.724374,dist:"부평구",addr:"인천 부평구 부흥로 294번길 4, 추인타워 502호",tel:"032-361-1368",transit:"부평시장역 1번출구(도보5분)",hours:"월~일 10:00~20:00",rem:"",visit:false,isNew:true},
+  {name:"온맘심리상담센터",cat:"border",lat:37.745086,lon:126.504702,dist:"강화군",addr:"인천 강화군 강화읍 강화대로 216번길 53, 4층",tel:"032-934-0356",transit:"버스 11·11A 경흥빌라, 갑룡초교 하차",hours:"월~토 10:00~20:00",rem:"",visit:false,isNew:false},
+  {name:"이룸감각통합상담센터",cat:"border",lat:37.401846,lon:126.723151,dist:"남동구",addr:"인천 남동구 논고개로 123번길 17, 아이플렉스 601호",tel:"070-4105-2925",transit:"인천논현역 3번출구(도보3분)",hours:"월~금 09:00~19:00 / 토 09:00~14:00",rem:"",visit:false,isNew:true},
+  {name:"한솔아동발달센터(김포점)",cat:"border",lat:37.644556,lon:126.627266,dist:"기타",addr:"경기도 김포시 김포한강9로 76번길 41, 연세프라자 601·901호",tel:"031-996-2282",transit:"구래역 4번출구(도보2분)",hours:"월~금 10:00~22:00 / 토~일 09:00~17:00",rem:"",visit:false,isNew:true},
+  /* ── DYSLEXIA ── */
+  {name:"365매일열린의원",cat:"dyslexia",lat:37.646750,lon:126.625213,dist:"기타",addr:"경기도 김포시 김포한강9로 109, 2층",tel:"031-981-7527",transit:"구래역 1번출구(도보10분)",hours:"월~금 10:00~19:00(12:20~13:20 휴게)",rem:"",visit:false,isNew:true},
+  {name:"다올언어심리상담센터(부개점)",cat:"dyslexia",lat:37.497278,lon:126.737243,dist:"부평구",addr:"인천 부평구 동수천로 132, 502호",tel:"032-719-3856",transit:"부개역 2번출구(도보15분)",hours:"월~토 09:00~20:00",rem:"",visit:false,isNew:false},
+  {name:"언어심리상담센터 든든한벗",cat:"dyslexia",lat:37.503010,lon:126.773210,dist:"기타",addr:"경기도 부천시 길주로 280, 프리머스 부천타워 408호",tel:"032-321-4555",transit:"신중동역 3번출구(도보3분)",hours:"월~금 10:00~21:00 / 토~일 10:00~15:00",rem:"",visit:false,isNew:true},
+  {name:"우리아이심리발달센터",cat:"dyslexia",lat:37.493180,lon:126.720037,dist:"부평구",addr:"인천 부평구 부평문화로 28, 2층(신영빌딩)",tel:"032-528-1477",transit:"부평역 5번출구(도보10분)",hours:"월~금 10:00~20:00 / 토 09:00~14:00",rem:"",visit:false,isNew:true},
+  {name:"이루언어심리발달센터(김포본점)",cat:"dyslexia",lat:37.600368,lon:126.726135,dist:"기타",addr:"경기도 김포시 유현로 33번길 76, 웨스트787 601호",tel:"031-981-0426",transit:"계양역 1번출구 (82번버스 풍무중학교 하차)",hours:"월~금 09:00~19:00 / 토 09:00~16:00 / 일 10:00~15:00",rem:"",visit:false,isNew:true}
+];
 
-    var locations = [
-        {"name": "인천기초학력지원센터(경인교대)", "addr": "인천 계양구 계산로 62", "cat": "both", "lat": 37.538426, "lon": 126.716567, "dist": "계양구", "tel": "032-540-1403", "rem": "교육청 직영 센터"},
-        {"name": "검단아동발달센터", "addr": "인천 서구 이음대로 378", "cat": "both", "lat": 37.594054, "lon":126.712714, "dist": "검단구", "tel": "070-8282-8285", "rem": "신규 협약"},
-        {"name": "맘친구아동심리발달센터", "addr": "인천 중구 하늘별빛로 65번길 8-11 303호", "cat": "both", "lat": 37.489592, "lon": 126.562439, "dist": "영종구", "tel": "010-2807-9403", "rem": "학교 찾아가는 교육 가능"},
-        {"name": "해수아동발달연구소", "addr": "경기도 부천시 길주로 91", "cat": "both", "lat": 37.506567, "lon": 126.752511, "dist": "기타", "tel": "032-715-5808", "rem": "부천 상동 소재"},
-        {"name": "아이꿈트리언어심리상담", "addr": "인천 서구 이음5로 80", "cat": "both", "lat": 37.595567, "lon": 126.716189, "dist": "검단구", "tel": "032-564-7323", "rem": "신규 협약"},
-        {"name": "이루언어심리발달센터(검단)", "addr": "인천 서구 이음5로 30", "cat": "both", "lat": 37.593823, "lon": 126.710937, "dist": "검단구", "tel": "032-710-7254", "rem": "신규"},
-        {"name": "다올언어심리상담센터(본점)", "addr": "인천 부평구 부개로 61-6", "cat": "both", "lat": 37.503363, "lon": 126.739554, "dist": "부평구", "tel": "032-502-3858", "rem": "신규"},
-        {"name": "김영효EN학습센터", "addr": "인천 연수구 신송로 154", "cat": "both", "lat": 37.398068, "lon": 126.649648, "dist": "연수구", "tel": "032-713-8506", "rem": "신규"},
-        {"name": "엘키즈언어심리상담센터", "addr": "인천 연수구 테크노파크로111번길 11", "cat": "both", "lat": 37.385311, "lon": 126.644077, "dist": "연수구", "tel": "032-831-8865", "rem": "신규"},
-        {"name": "우리아이발달지원센터", "addr": "인천 남동구 만수서로105번길 47", "cat": "both", "lat": 37.463161, "lon": 126.739527, "dist": "남동구", "tel": "032-464-1871", "rem": "만수주공 인근"},
-        {"name": "새휴라임심리발달센터", "addr": "인천 남동구 장승남로 48", "cat": "both", "lat": 37.443308, "lon": 126.737639, "dist": "남동구", "tel": "032-465-2252", "rem": ""},
-        {"name": "이화공감심리상담센터", "addr": "인천 부평구 길주로 659 미라쥬타워 508호", "cat": "both", "lat": 37.507330, "lon": 126.735762, "dist": "부평구", "tel": "032-508-5191", "rem": "신규"},
-        {"name": "동주학습심리센터", "addr": "부천시 길주로 111(센타프라자, 403호)", "cat": "both", "lat": 37.506457, "lon": 126.754890, "dist": "기타", "tel": "032-236-5757", "rem": ""},
-        {"name": "초록소리", "addr": "부천시 부일로 232, 부천 상동행복주택 2층 17호", "cat": "both", "lat": 37.488152, "lon": 126.755730, "dist": "기타", "tel": "032-323-7866", "rem": ""},
-        {"name": "톡톡언어학습심리센터", "addr": "인천 연수구 독배로 68 유진메디타워 501호", "cat": "both", "lat": 37.426808, "lon": 126.645196, "dist": "연수구", "tel": "032-833-5579", "rem": ""},
-        {"name": "햇살나무발달센터", "addr": "인천 서구 원당대로 676, 702호(당하동, 제일아이조움)", "cat": "both", "lat": 37.593433, "lon": 126.676443, "dist": "검단구", "tel": "010-7579-8776", "rem": "신규"},
-        {"name": "구래아동발달센터", "addr": "김포시 김포한강9로76번길 37", "cat": "both", "lat": 37.644247, "lon": 126.627371, "dist": "기타", "tel": "070-4012-7535", "rem": ""},
-        {"name": "경계선지능인지원센터", "addr": "인천 서구 백범로 622번길 9, 인천 북부근로자복지관 3층", "cat": "border", "lat": 37.478336, "lon": 126.686598, "dist": "서구", "tel": "010-8282-6911", "rem": "초등 대상 학교로 찾아가는 교육 전용"},
-        {"name": "대교에듀캠프 드림멘토", "addr": "서울 강서구 공항대로 186 로뎀타워 3층", "cat": "border", "lat": 37.559258, "lon": 126.827994, "dist": "기타", "tel": "010-4042-9039", "rem": "찾아가는 교육 가능"},
-        {"name": "해바람아동발달센터", "addr": "인천 동구 송현로 1 송현프라자 8층", "cat": "border", "lat": 37.477203, "lon": 126.633378, "dist": "미추홀구", "tel": "032-777-6616", "rem": "찾아가는 교육 가능"},
-        {"name": "검단라파언어심리센터", "addr": "인천 서구 검단로 459번길 3-2, 401호-403호(왕길동, 파크프라자)", "cat": "border", "lat": 37.601762, "lon": 126.654738, "dist": "검단구", "tel": "032-565-7757", "rem": ""},
-        {"name": "남동구아동복지종합센터", "addr": "인천 남동구 용천로 208 사회복지회관 201호", "cat": "border", "lat": 37.468553, "lon": 126.714038, "dist": "남동구", "tel": "032-421-6100", "rem": ""},
-        {"name": "논현심리언어연구소", "addr": "인천 남동구 논고개로 123번길 34,(논현동, 칼리오페) 6층", "cat": "border", "lat": 37.401679, "lon": 126.722095, "dist": "남동구", "tel": "032-424-2752", "rem": ""},
-        {"name": "새봄심리상담센터", "addr": "인천 부평구 부흥로 294번길 4, 추인타워 502호", "cat": "border", "lat": 37.498280, "lon": 126.724253, "dist": "부평구", "tel": "032-361-1368", "rem": "신규"},
-        {"name": "온맘심리상담센터", "addr": "인천 강화군 강화읍 강화대로 216번길 53, 4층", "cat": "border", "lat": 37.745123, "lon": 126.504680, "dist": "강화군", "tel": "032-934-0356", "rem": ""},
-        {"name": "이룸감각통합상담센터", "addr": "인천 남동구 논고개로 123번길 17, 아이플렉스 601호", "cat": "border", "lat": 37.401898, "lon": 126.723065, "dist": "남동구", "tel": "070-4105-2925", "rem": "신규"},
-        {"name": "한솔아동발달센터(김포점)", "addr": "경기도 김포시 김포한강9로 76번길 41, 연세프라자 601호, 901호", "cat": "border", "lat": 37.644565, "lon": 126.627287, "dist": "기타", "tel": "031-996-2282", "rem": "신규"},
-        {"name": "365매일열린의원", "addr": "김포시 김포한강9로 109", "cat": "dyslexia", "lat": 37.646759, "lon": 126.625202, "dist": "기타", "tel": "031-981-7527", "rem": "신규"},
-        {"name": "다올언어심리(부개점)", "addr": "인천 부평구 동수천로 132", "cat": "dyslexia", "lat": 37.489739, "lon": 126.731139, "dist": "부평구", "tel": "032-719-3856", "rem": ""},
-        {"name": "언어심리상담 든든한벗", "addr": "경기도 부천시 길주로 280 프리머스 부천타워 408호", "cat": "dyslexia", "lat": 37.503044, "lon": 126.773188, "dist": "기타", "tel": "032-321-4555", "rem": "신규"},
-        {"name": "우리아이심리발달센터", "addr": "인천 부평구 부평문화로 28", "cat": "dyslexia", "lat": 37.493189, "lon": 126.720091, "dist": "부평구", "tel": "032-528-1477", "rem": "신규"},
-        {"name": "이루언어심리(김포본점)", "addr": "김포시 유현로 33번길 76", "cat": "dyslexia", "lat": 37.600427, "lon": 126.726199, "dist": "기타", "tel": "031-981-0426", "rem": "신규"},       
-    ];
+var CAT = {
+  both:     { label:"난독증+경계선 지능", color:"#E05C2A" },
+  border:   { label:"경계선 지능",        color:"#3A7BD5" },
+  dyslexia: { label:"난독증",            color:"#2AAB6B" }
+};
 
-    var map = L.map('map', { zoomControl: false }).setView([37.53, 126.70], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    var markerGroup = L.featureGroup().addTo(map);
+/* 지역별 표에 쓸 구 목록 (기타 제외) */
+var DISTS = ["계양구","부평구","서구","검단구","남동구","연수구","동구","영종구","강화군","기타"];
 
-    function renderMarkers() {
-        locations.forEach(function(loc) {
-            var color = loc.cat === 'border' ? '#007bff' : (loc.cat === 'dyslexia' ? '#fd7e14' : '#dc3545');
-            var marker = L.circleMarker([loc.lat, loc.lon], {
-                radius: 11, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9
-            }).addTo(markerGroup);
+/* ═══════════════════════════════════
+   MAP INIT
+═══════════════════════════════════ */
+var leafMap = L.map('map', { zoomControl: false }).setView([37.52, 126.71], 11);
+L.control.zoom({ position: 'topright' }).addTo(leafMap);
 
-            var naverMapUrl = "https://map.naver.com/v5/search/" + encodeURIComponent(loc.addr);
-            var popupContent = `
-                <div style="width:250px; margin:-10px;">
-                    <div class="popup-header" style="background:${color}">${loc.name}</div>
-                    <div class="popup-body">
-                        <b>📍 주소:</b> <a href="${naverMapUrl}" target="_blank">${loc.addr}</a><br>
-                        <b>📞 전화:</b> <a href="tel:${loc.tel}">${loc.tel}</a><br>
-                        <hr style="margin:8px 0">
-                        <small><b>📝 협약내용/특이사항:</b><br>${loc.rem || '정보 없음'}</small>
-                    </div>
-                </div>`;
-            marker.bindPopup(popupContent);
-        });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(leafMap);
+
+/* ── 구 이름 레이블 ── */
+var districtLayer = L.layerGroup().addTo(leafMap);
+var districtLabels = [
+  {name:'계양구', lat:37.537, lon:126.737},
+  {name:'부평구', lat:37.508, lon:126.722},
+  {name:'서구',   lat:37.546, lon:126.676},
+  {name:'검단구', lat:37.607, lon:126.686},
+  {name:'남동구', lat:37.447, lon:126.731},
+  {name:'연수구', lat:37.410, lon:126.680},
+  {name:'미추홀구',lat:37.463, lon:126.650},
+  {name:'동구',   lat:37.474, lon:126.643},
+  {name:'중구',   lat:37.474, lon:126.618},
+  {name:'강화군', lat:37.745, lon:126.488},
+  {name:'옹진군', lat:37.460, lon:126.417}
+];
+districtLabels.forEach(function(d) {
+  L.marker([d.lat, d.lon], {
+    icon: L.divIcon({
+      className: '',
+      html: '<div style="font-family:\'Noto Sans KR\',sans-serif;font-size:13px;font-weight:700;color:#2C3E50;'
+          + 'text-shadow:1px 1px 0 rgba(255,255,255,.9),-1px -1px 0 rgba(255,255,255,.9),'
+          + '1px -1px 0 rgba(255,255,255,.9),-1px 1px 0 rgba(255,255,255,.9);'
+          + 'white-space:nowrap;pointer-events:none;opacity:0.82;">'+d.name+'</div>',
+      iconSize:[80,20], iconAnchor:[40,10]
+    }),
+    interactive: false, zIndexOffset: -100
+  }).addTo(districtLayer);
+});
+
+/* GeoJSON 경계 */
+fetch('https://raw.githubusercontent.com/vuski/admdongkor/master/ver20230701/HangJeongDong_ver20230701.geojson')
+  .then(function(r){return r.json();})
+  .then(function(geo){
+    var ic = {type:'FeatureCollection', features: geo.features.filter(function(f){
+      return f.properties && f.properties.sido_cd === '28';
+    })};
+    L.geoJSON(ic, {style:{color:'#5B7FA6',weight:1,opacity:0.3,fillColor:'#A8C4E0',fillOpacity:0.05,dashArray:'3,4'},interactive:false}).addTo(districtLayer);
+    districtLayer.bringToBack();
+  }).catch(function(){});
+
+/* ── 마커 ── */
+var layerGroups = {
+  both:     L.layerGroup().addTo(leafMap),
+  border:   L.layerGroup().addTo(leafMap),
+  dyslexia: L.layerGroup().addTo(leafMap)
+};
+var layerVisible = {both:true, border:true, dyslexia:true};
+
+centers.forEach(function(c) {
+  var col = CAT[c.cat].color;
+  var icon = L.divIcon({
+    className: '',
+    html: '<div style="background:'+col+';width:30px;height:30px;border-radius:50%;border:3px solid white;'
+        + 'box-shadow:0 2px 8px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;">'
+        + '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>'
+        + '</div>',
+    iconSize:[30,30], iconAnchor:[15,15]
+  });
+  var nq = encodeURIComponent(c.addr+' '+c.name);
+  var nb = c.isNew ? '<span style="font-size:10px;background:rgba(255,255,255,0.25);padding:2px 6px;border-radius:99px;margin-left:5px;">신규</span>' : '';
+  var vb = c.visit ? '<div class="popup-rem" style="color:#8B5CF6;">🚶 학교로 찾아가는 교육 가능</div>' : '';
+  var html = '<div style="font-family:\'Noto Sans KR\',sans-serif;">'
+    + '<div class="popup-head" style="background:'+col+';">'
+    + '<div class="popup-cat-label">'+CAT[c.cat].label+'</div>'
+    + '<div class="popup-name">'+c.name+nb+'</div>'
+    + '</div>'
+    + '<div class="popup-body">'
+    + '<div class="popup-row">📍 '+c.addr+'</div>'
+    + (c.tel     ? '<div class="popup-row">📞 '+c.tel+'</div>' : '')
+    + (c.transit ? '<div class="popup-row">🚌 '+c.transit+'</div>' : '')
+    + (c.hours   ? '<div class="popup-row">🕐 '+c.hours+'</div>' : '')
+    + vb
+    + (c.rem && !c.visit ? '<div class="popup-rem" style="color:'+col+';">※ '+c.rem+'</div>' : '')
+    + '<a href="https://map.naver.com/v5/search/'+nq+'" target="_blank" class="popup-naver">🗺 네이버 지도에서 길찾기</a>'
+    + '</div></div>';
+  c._marker = L.marker([c.lat,c.lon],{icon:icon}).bindPopup(html,{maxWidth:300}).addTo(layerGroups[c.cat]);
+});
+
+/* ── 레이어 필터 버튼 ── */
+document.querySelectorAll('.mf-btn').forEach(function(btn) {
+  var cat = btn.getAttribute('data-layer');
+  var col = CAT[cat].color;
+  btn.addEventListener('click', function() {
+    layerVisible[cat] = !layerVisible[cat];
+    if (layerVisible[cat]) {
+      leafMap.addLayer(layerGroups[cat]);
+      btn.classList.remove('off');
+      btn.style.borderColor = col; btn.style.color = col;
+    } else {
+      leafMap.removeLayer(layerGroups[cat]);
+      btn.classList.add('off');
     }
+  });
+});
 
-    function zoomToDistrict(cat, dist) {
-        var filtered = locations.filter(d => d.cat === cat && d.dist === dist);
-        if (filtered.length > 0) {
-            var bounds = L.latLngBounds(filtered.map(d => [d.lat, d.lon]));
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-            if(document.getElementById('bottomSheet').classList.contains('expanded')) toggleSheet();
-        }
-    }
+/* ═══════════════════════════════════
+   BOTTOM SHEET
+═══════════════════════════════════ */
+var bs = document.getElementById('bottom-sheet');
+var isExpanded = true;
 
-    function resetView() { map.setView([37.53, 126.70], 11); }
+function buildStatsTable() {
+  var cats = ['both','border','dyslexia'];
+  var catLabels = {both:'난독+경계선', border:'경계선 지능', dyslexia:'난독증'};
+  var thead = '<thead><tr><th>구분</th>';
+  DISTS.forEach(function(d){ thead += '<th>'+d+'</th>'; });
+  thead += '</tr></thead>';
+  var tbody = '<tbody>';
+  cats.forEach(function(cat) {
+    tbody += '<tr><td><span class="cat-pill '+cat+'">'+catLabels[cat]+'</span></td>';
+    DISTS.forEach(function(dist) {
+      var matches = centers.filter(function(c){ return c.cat===cat && c.dist===dist; });
+      if (matches.length > 0) {
+        tbody += '<td class="stats-td-link" data-lat="'+matches[0].lat+'" data-lon="'+matches[0].lon+'" data-count="'+matches.length+'">'+matches.length+'</td>';
+      } else {
+        tbody += '<td class="stats-td-zero">0</td>';
+      }
+    });
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+  document.getElementById('stats-table').innerHTML = thead + tbody;
+  document.querySelectorAll('.stats-td-link').forEach(function(td) {
+    td.addEventListener('click', function() {
+      var lat = parseFloat(td.getAttribute('data-lat'));
+      var lon = parseFloat(td.getAttribute('data-lon'));
+      collapseSheet();
+      leafMap.setView([lat, lon], 14);
+      setTimeout(function(){ leafMap.invalidateSize(); }, 100);
+    });
+  });
+}
 
-    function updateStats() {
-        var districts = ["미추홀구", "영종구", "서구", "검단구", "부평구", "계양구", "남동구", "연수구", "강화군", "기타"];
-        // 구분 명칭도 요청대로 '경계선지능 및 난독증'으로 변경
-        var categories = [
-            {id:"border", name:"경계선지능"}, 
-            {id:"dyslexia", name:"난독증"}, 
-            {id:"both", name:"경계선지능 및 난독증"}
-        ];
-        var html = "";
-        categories.forEach(cat => {
-            html += `<tr><td style="background:#f9f9f9; font-weight:bold; text-align:left;">${cat.name}</td>`;
-            districts.forEach(dist => {
-                var count = locations.filter(l => l.cat === cat.id && l.dist === dist).length;
-                html += count > 0 ? `<td class="clickable" onclick="zoomToDistrict('${cat.id}', '${dist}')">${count}</td>` : `<td style="color:#ccc">0</td>`;
-            });
-            html += "</tr>";
-        });
-        document.getElementById("statTable").innerHTML = html;
-    }
+function expandSheet() {
+  isExpanded = true;
+  bs.classList.remove('collapsed');
+  document.querySelector('.bs-handle-label').textContent = '▼ 지역별 협약기관 현황';
+  leafMap.invalidateSize();
+}
+function collapseSheet() {
+  isExpanded = false;
+  bs.classList.add('collapsed');
+  document.querySelector('.bs-handle-label').textContent = '▲ 지역별 협약기관 현황';
+  leafMap.invalidateSize();
+}
+document.getElementById('bs-handle').addEventListener('click', function() {
+  isExpanded ? collapseSheet() : expandSheet();
+});
+document.getElementById('bs-close-btn').addEventListener('click', collapseSheet);
+buildStatsTable();
 
-    renderMarkers();
-    updateStats();
+/* ═══════════════════════════════════
+   내 위치 기능
+═══════════════════════════════════ */
+var myLat = null, myLon = null, myMarker = null;
+
+function calcDist(lat1, lon1, lat2, lon2) {
+  var R = 6371;
+  var dLat = (lat2-lat1)*Math.PI/180;
+  var dLon = (lon2-lon1)*Math.PI/180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2)
+        + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)
+        * Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function fmtDist(km) {
+  return km < 1 ? Math.round(km*1000)+'m' : km.toFixed(1)+'km';
+}
+
+document.getElementById('loc-btn').addEventListener('click', function() {
+  var btn = this;
+  btn.textContent = '⏳';
+  if (!navigator.geolocation) { alert('이 기기에서 위치 서비스를 지원하지 않아요.'); btn.textContent = '📍'; return; }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      myLat = pos.coords.latitude;
+      myLon = pos.coords.longitude;
+      btn.textContent = '📍';
+
+      /* 내 위치 마커 */
+      if (myMarker) leafMap.removeLayer(myMarker);
+      myMarker = L.marker([myLat, myLon], {
+        icon: L.divIcon({
+          className:'',
+          html:'<div class="my-loc-dot"></div>',
+          iconSize:[16,16], iconAnchor:[8,8]
+        }),
+        zIndexOffset: 1000
+      }).addTo(leafMap).bindPopup('📍 내 위치');
+      collapseSheet();
+      leafMap.setView([myLat, myLon], 13);
+      setTimeout(function(){ leafMap.invalidateSize(); }, 100);
+
+      /* 목록 탭으로 전환 후 가까운 순 정렬 */
+      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+      document.querySelector('[data-tab="list"]').classList.add('active');
+      document.getElementById('view-list').classList.add('active');
+
+      /* 배너 표시 */
+      var banner = document.getElementById('near-banner');
+      banner.classList.add('show');
+      renderList(true);
+    },
+    function() { alert('위치 정보를 가져올 수 없어요.\n브라우저 설정에서 위치 권한을 허용해 주세요.'); btn.textContent = '📍'; }
+  );
+});
+
+document.getElementById('near-banner-close').addEventListener('click', function() {
+  myLat = null; myLon = null;
+  if (myMarker) { leafMap.removeLayer(myMarker); myMarker = null; }
+  document.getElementById('near-banner').classList.remove('show');
+  renderList();
+});
+
+/* ═══════════════════════════════════
+   LIST
+═══════════════════════════════════ */
+var curChip = 'all';
+document.getElementById('list-search').addEventListener('input', function(){ renderList(); });
+document.querySelectorAll('.chip').forEach(function(chip) {
+  chip.addEventListener('click', function() {
+    curChip = chip.getAttribute('data-chip');
+    document.querySelectorAll('.chip').forEach(function(c){ c.className='chip'; });
+    chip.className = 'chip active-'+curChip;
+    renderList();
+  });
+});
+
+function renderList(nearSort) {
+  var q = document.getElementById('list-search').value.toLowerCase();
+  var filtered = centers.filter(function(c) {
+    var matchCat;
+    if (curChip === 'all')        matchCat = true;
+    else if (curChip === 'visit') matchCat = c.visit;
+    else                          matchCat = c.cat === curChip;
+    var matchQ = !q || c.name.indexOf(q)>-1 || c.addr.toLowerCase().indexOf(q)>-1 || c.dist.indexOf(q)>-1;
+    return matchCat && matchQ;
+  });
+
+  /* 거리 계산 및 정렬 */
+  var useNear = nearSort || (myLat !== null);
+  if (useNear && myLat !== null) {
+    filtered.forEach(function(c){
+      c._distKm = calcDist(myLat, myLon, c.lat, c.lon);
+    });
+    filtered.sort(function(a,b){ return a._distKm - b._distKm; });
+  }
+
+  document.getElementById('list-count').textContent = '총 '+filtered.length+'개 기관'+(useNear && myLat ? ' · 가까운 순' : '');
+  document.getElementById('list-container').innerHTML = filtered.map(function(c, idx) {
+    var col = CAT[c.cat].color;
+    var nq = encodeURIComponent(c.addr+' '+c.name);
+    var visitBadge = c.visit ? '<span class="visit-badge">🚶 찾아가는 교육</span>' : '';
+    var distBadge  = (useNear && myLat && c._distKm !== undefined)
+      ? '<span class="dist-badge">'+fmtDist(c._distKm)+'</span>' : '';
+    var rankBadge  = (useNear && myLat && idx < 3)
+      ? '<span style="font-size:11px;margin-left:4px;vertical-align:middle;">'+(idx===0?'🥇':idx===1?'🥈':'🥉')+'</span>' : '';
+    return '<div class="center-card" data-idx="'+centers.indexOf(c)+'" style="cursor:pointer;">'
+      + '<div class="card-top">'
+      + '<div class="card-cat-dot" style="background:'+col+'"></div>'
+      + '<div class="card-name">'+c.name+(c.isNew?'<span class="card-new">신규</span>':'')+visitBadge+distBadge+rankBadge+'</div>'
+      + '<span class="cat-tag '+c.cat+'">'+CAT[c.cat].label+'</span>'
+      + '</div>'
+      + '<div class="card-addr">📍 '+c.addr+'</div>'
+      + (c.transit?'<div class="card-info-row"><strong>교통</strong>'+c.transit+'</div>':'')
+      + (c.hours  ?'<div class="card-info-row"><strong>운영</strong>'+c.hours+'</div>':'')
+      + '<div class="card-bottom">'
+      + '<a class="card-tel" href="tel:'+c.tel+'" onclick="event.stopPropagation()">📞 '+c.tel+'</a>'
+      + '<span class="card-go-map">지도에서 보기 →</span>'
+      + '</div></div>';
+  }).join('');
+
+  /* 카드 클릭 → 지도 탭 이동 + 팝업 열기 */
+  document.querySelectorAll('.center-card').forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      if (e.target.classList.contains('card-tel')) return;
+      var idx = parseInt(card.getAttribute('data-idx'));
+      var c = centers[idx];
+      /* 지도 탭 전환 */
+      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+      document.querySelector('[data-tab="map"]').classList.add('active');
+      document.getElementById('view-map').classList.add('active');
+      expandSheet();
+      setTimeout(function(){
+        leafMap.invalidateSize();
+        leafMap.setView([c.lat, c.lon], 15);
+        if (c._marker) c._marker.openPopup();
+      }, 150);
+    });
+  });
+}
+
+/* ═══════════════════════════════════
+   TABS
+═══════════════════════════════════ */
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var tab = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+    btn.classList.add('active');
+    document.getElementById('view-'+tab).classList.add('active');
+    if (tab==='map')  { expandSheet(); setTimeout(function(){leafMap.invalidateSize();},120); }
+    if (tab==='list') renderList();
+  });
+});
+
+renderList();
 </script>
 </body>
 </html>
