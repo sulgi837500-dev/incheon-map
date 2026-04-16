@@ -257,15 +257,15 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: va
     <!-- 범례 -->
     <div class="map-legend">
       <div class="legend-title">유형</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#E05C2A"></div>난독증+경계선 지능</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E05C2A"></div>난독+경계선</div>
       <div class="legend-item"><div class="legend-dot" style="background:#3A7BD5"></div>경계선 지능</div>
       <div class="legend-item"><div class="legend-dot" style="background:#2AAB6B"></div>난독증</div>
     </div>
 
     <!-- 레이어 필터 -->
     <div class="map-filters">
-      <button class="mf-btn" data-layer="both"     style="border-color:#E05C2A;color:#E05C2A;">난독증+경계선 지능</button>
-      <button class="mf-btn" data-layer="border"   style="border-color:#3A7BD5;color:#3A7BD5;">경계선 지능</button>
+      <button class="mf-btn" data-layer="both"     style="border-color:#E05C2A;color:#E05C2A;">난독+경계</button>
+      <button class="mf-btn" data-layer="border"   style="border-color:#3A7BD5;color:#3A7BD5;">경계선</button>
       <button class="mf-btn" data-layer="dyslexia" style="border-color:#2AAB6B;color:#2AAB6B;">난독증</button>
     </div>
 
@@ -311,7 +311,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: va
     </div>
     <div class="filter-chips">
       <button class="chip active-all"  data-chip="all">전체</button>
-      <button class="chip" data-chip="both">난독증+경계선 지능</button>
+      <button class="chip" data-chip="both">난독+경계선 지능</button>
       <button class="chip" data-chip="border">경계선 지능</button>
       <button class="chip" data-chip="dyslexia">난독증</button>
       <button class="chip" data-chip="visit">찾아가는 교육</button>
@@ -417,9 +417,9 @@ var centers = [
   {name:"햇살나무발달센터",cat:"both",lat:37.593433,lon:126.676443,dist:"검단구",addr:"인천 서구 원당대로 676, 7층 702호(당하동, 제일아이조움)",tel:"010-7579-8776",transit:"완정역 2번출구(도보5분)",hours:"월~금 10:00~19:10 / 토 10:00~15:00",rem:"",visit:false,isNew:true},
   {name:"구래아동발달센터",cat:"both",lat:37.644247,lon:126.627371,dist:"기타",addr:"경기도 김포시 김포한강9로 76번길 37(경서프라자), 1002호",tel:"070-4012-7535",transit:"구래역 4번출구(도보2분)",hours:"월~금 09:30~19:00 / 토 10:00~14:00",rem:"",visit:false,isNew:false},
   /* ── BORDER ── */
-  {name:"경계선지능인지원센터",cat:"border",lat:37.478336,lon:126.686598,dist:"서구",addr:"인천 서구 백범로 622번길 9, 북부근로자복지관 3층",tel:"010-8282-6911",transit:"가재울역 3번출구(도보10분)",hours:"",rem:"초등 대상 학교로 찾아가는 교육만 가능",visit:true,isNew:false},
+  {name:"경계선지능인지원센터",cat:"border",lat:37.478336,lon:126.686598,dist:"서해구",addr:"인천 서구 백범로 622번길 9, 북부근로자복지관 3층",tel:"010-8282-6911",transit:"가재울역 3번출구(도보10분)",hours:"",rem:"초등 대상 학교로 찾아가는 교육만 가능",visit:true,isNew:false},
   {name:"대교에듀캠프 드림멘토",cat:"border",lat:37.559300,lon:126.828048,dist:"기타",addr:"서울 강서구 공항대로 186, 로뎀타워 3층",tel:"010-4042-9039",transit:"마곡역 5번출구(도보2분)",hours:"월~금 10:00~19:00 / 토 09:00~16:00",rem:"학교 찾아가는 교육 가능",visit:true,isNew:false},
-  {name:"해바람아동발달센터",cat:"border",lat:37.477245,lon:126.633303,dist:"미추홀구",addr:"인천 동구 송현로 1, 송현프라자 8층",tel:"032-777-6616",transit:"동인천역 4번출구(도보2분)",hours:"월~금 11:00~19:00",rem:"학교 찾아가는 교육 가능",visit:true,isNew:true},
+  {name:"해바람아동발달센터",cat:"border",lat:37.477245,lon:126.633303,dist:"제물포구",addr:"인천 동구 송현로 1, 송현프라자 8층",tel:"032-777-6616",transit:"동인천역 4번출구(도보2분)",hours:"월~금 11:00~19:00",rem:"학교 찾아가는 교육 가능",visit:true,isNew:true},
   {name:"검단라파언어심리센터",cat:"border",lat:37.601796,lon:126.654738,dist:"검단구",addr:"인천 서구 검단로 459번길 3-2, 401·403호(왕길동, 파크프라자)",tel:"032-565-7757",transit:"검단사거리역 3번출구(도보3분)",hours:"월~금 10:00~20:00 / 토 09:00~18:00",rem:"",visit:false,isNew:false},
   {name:"남동구아동복지종합센터",cat:"border",lat:37.468553,lon:126.714092,dist:"남동구",addr:"인천 남동구 용천로 208, 사회복지회관 201호",tel:"032-421-6100",transit:"간석오거리역 2번출구(도보11분)",hours:"월~금 09:00~19:00",rem:"",visit:false,isNew:false},
   {name:"논현심리언어연구소",cat:"border",lat:37.402337,lon:126.722038,dist:"남동구",addr:"인천 남동구 논고개로 123번길 34(논현동, 칼리오페) 6층",tel:"032-424-2752",transit:"인천논현역 3번출구(도보4분)",hours:"월~금 10:00~20:00 / 토 09:00~15:00",rem:"",visit:false,isNew:false},
@@ -442,7 +442,7 @@ var CAT = {
 };
 
 /* 지역별 표에 쓸 구 목록 (기타 제외) */
-var DISTS = ["계양구","부평구","서구","검단구","남동구","연수구","동구","영종구","강화군","기타"];
+var DISTS = ["계양구","부평구","서해구","검단구","남동구","연수구","제물포구","영종구","강화군","기타"];
 
 /* ═══════════════════════════════════
    MAP INIT
@@ -461,12 +461,12 @@ var districtLayer = L.layerGroup().addTo(leafMap);
 var districtLabels = [
   {name:'계양구', lat:37.537, lon:126.737},
   {name:'부평구', lat:37.508, lon:126.722},
-  {name:'서구',   lat:37.546, lon:126.676},
+  {name:'서해구',   lat:37.546, lon:126.676},
   {name:'검단구', lat:37.607, lon:126.686},
   {name:'남동구', lat:37.447, lon:126.731},
   {name:'연수구', lat:37.410, lon:126.680},
   {name:'미추홀구',lat:37.463, lon:126.650},
-  {name:'동구',   lat:37.474, lon:126.643},
+  {name:'제물포구',   lat:37.474, lon:126.643},
   {name:'중구',   lat:37.474, lon:126.618},
   {name:'강화군', lat:37.745, lon:126.488},
   {name:'옹진군', lat:37.460, lon:126.417}
